@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Inventory.Infrastructure.Data;
 using Inventory.Core.Entities;
-using Inventory.Api.Models;
+using Inventory.Api.Dtos;
 
 namespace Inventory.Api.Controllers;
 
@@ -20,7 +20,10 @@ public class RoomsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var rooms = await _db.Rooms.ToListAsync();
+        var rooms = await _db.Rooms
+            .Select(r => new RoomResponse { Id = r.Id, Name = r.Name })
+            .ToListAsync();
+
         return Ok(rooms);
     }
 
@@ -35,7 +38,7 @@ public class RoomsController : ControllerBase
         _db.Rooms.Add(room);
         await _db.SaveChangesAsync();
 
-        return Ok(room);
+        return Ok(new RoomResponse { Id = room.Id, Name = room.Name });
     }
 
     [HttpGet("{id}/items")]
@@ -48,6 +51,18 @@ public class RoomsController : ControllerBase
         if (room is null)
             return NotFound();
 
-        return Ok(room.Items);
+        var items = room.Items.Select(i => new InventoryItemResponse
+        {
+            Id = i.Id,
+            Name = i.Name,
+            PurchasePrice = i.PurchasePrice,
+            PurchaseDate = i.PurchaseDate,
+            WarrantyExpiry = i.WarrantyExpiry,
+            SerialNumber = i.SerialNumber,
+            Notes = i.Notes,
+            RoomId = i.RoomId
+        });
+
+        return Ok(items);
     }
 }
