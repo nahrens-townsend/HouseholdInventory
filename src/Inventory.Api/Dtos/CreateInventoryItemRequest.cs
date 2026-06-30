@@ -1,4 +1,4 @@
-namespace Inventory.Api.Models;
+namespace Inventory.Api.Dtos;
 
 public class CreateInventoryItemRequest
 {
