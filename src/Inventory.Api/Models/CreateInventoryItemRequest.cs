@@ -8,4 +8,5 @@ public class CreateInventoryItemRequest
     public DateTime WarrantyExpiry { get; set; }
     public string? SerialNumber { get; set; }
     public string? Notes { get; set; }
+    public int RoomId { get; set; }
 }

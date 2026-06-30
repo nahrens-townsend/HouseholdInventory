@@ -9,4 +9,15 @@ public class InventoryDbContext : DbContext
         : base(options) { }
 
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+
+    public DbSet<Room> Rooms => Set<Room>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Room>()
+            .HasMany(r => r.Items)
+            .WithOne(i => i.Room)
+            .HasForeignKey(i => i.RoomId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
 }
