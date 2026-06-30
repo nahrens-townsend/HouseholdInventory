@@ -34,7 +34,8 @@ public class ItemsController : ControllerBase
             PurchaseDate = request.PurchaseDate,
             WarrantyExpiry = request.WarrantyExpiry,
             SerialNumber = request.SerialNumber,
-            Notes = request.Notes
+            Notes = request.Notes,
+            RoomId = request.RoomId
         };
 
         _db.InventoryItems.Add(item);

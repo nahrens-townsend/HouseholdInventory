@@ -18,4 +18,8 @@ public class InventoryItem
     public string? SerialNumber { get; set; }
 
     public string? Notes { get; set; }
+
+    public int RoomId { get; set; }
+
+    public Room Room { get; set; } = null!;
 }
