@@ -84,6 +84,7 @@ jobs:
           dotnet ef database update
           --project ${{ env.INFRA_PROJECT }}
           --startup-project ${{ env.API_PROJECT }}
+          --configuration Release
           --no-build
 
   # ─────────────────────────────────────────────
