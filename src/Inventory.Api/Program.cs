@@ -1,5 +1,6 @@
 using Inventory.Api.GraphQL;
 using Inventory.Infrastructure.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,10 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Controllers (IMPORTANT — you are using a controller-based API)
+// Controllers
 builder.Services.AddControllers();
 
-// Add DbContext to the container
+// DbContext — connection string supplied via appsettings or App Service Configuration
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -26,7 +27,14 @@ builder.Services
 
 var app = builder.Build();
 
-// Swagger UI
+// Required when running behind Azure App Service's reverse proxy so that
+// UseHttpsRedirection reads the correct scheme and host from forwarded headers.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+// Swagger UI (all environments)
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -34,12 +42,6 @@ app.UseHttpsRedirection();
 
 app.MapGraphQL();
 
-// Map controllers
 app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
