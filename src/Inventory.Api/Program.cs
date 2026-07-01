@@ -1,3 +1,4 @@
+using Inventory.Api.GraphQL;
 using Inventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,15 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
+// GraphQL
+builder.Services
+    .AddGraphQLServer()
+    .AddQueryType<Query>()
+    .AddMutationType<Mutation>()
+    .AddProjections()
+    .AddFiltering()
+    .AddSorting();
+
 var app = builder.Build();
 
 // Swagger UI
@@ -21,6 +31,8 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.MapGraphQL();
 
 // Map controllers
 app.MapControllers();
