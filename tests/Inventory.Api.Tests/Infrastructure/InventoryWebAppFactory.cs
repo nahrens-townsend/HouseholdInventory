@@ -21,15 +21,32 @@ public class InventoryWebAppFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(services =>
         {
-            // Remove the SQL Server DbContext registration from Program.cs
-            var dbDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<InventoryDbContext>));
-            if (dbDescriptor != null)
-                services.Remove(dbDescriptor);
+            // EF Core 8+ registers options via IDbContextOptionsConfiguration<T> rather than a
+            // plain DbContextOptions<T> descriptor — remove both patterns so the SQL Server
+            // configuration from Program.cs is fully replaced.
+            var efDescriptors = services
+                .Where(d =>
+                    d.ServiceType == typeof(DbContextOptions<InventoryDbContext>) ||
+                    (d.ServiceType.IsGenericType &&
+                     d.ServiceType.GetGenericTypeDefinition().Name.Contains("DbContextOptionsConfiguration") &&
+                     d.ServiceType.GenericTypeArguments.Length == 1 &&
+                     d.ServiceType.GenericTypeArguments[0] == typeof(InventoryDbContext)))
+                .ToList();
 
-            // Replace with an isolated InMemory database
+            foreach (var d in efDescriptors)
+                services.Remove(d);
+
+            // Build a dedicated InMemory service provider so EF never sees both SqlServer
+            // and InMemory providers in the same IServiceProvider (which would throw).
+            var inMemoryServiceProvider = new ServiceCollection()
+                .AddEntityFrameworkInMemoryDatabase()
+                .BuildServiceProvider();
+
             services.AddDbContext<InventoryDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+            {
+                options.UseInMemoryDatabase(_dbName);
+                options.UseInternalServiceProvider(inMemoryServiceProvider);
+            });
 
             // Remove the background service — it uses real timers and would
             // interfere with deterministic tests
@@ -51,3 +68,4 @@ public class InventoryWebAppFactory : WebApplicationFactory<Program>
         action(db);
     }
 }
+
