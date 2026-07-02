@@ -22,4 +22,6 @@ public class InventoryItem
     public int RoomId { get; set; }
 
     public Room Room { get; set; } = null!;
+
+    public List<WarrantyReminder> WarrantyReminders { get; set; } = [];
 }
