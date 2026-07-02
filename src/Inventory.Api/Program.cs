@@ -1,4 +1,5 @@
 using Inventory.Api.GraphQL;
+using Inventory.Api.Services;
 using Inventory.Infrastructure.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,9 @@ builder.Services
     .AddProjections()
     .AddFiltering()
     .AddSorting();
+
+// Background service — warranty expiry reminders
+builder.Services.AddHostedService<WarrantyReminderService>();
 
 var app = builder.Build();
 
