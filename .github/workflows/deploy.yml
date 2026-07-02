@@ -2,14 +2,14 @@ name: Build, Migrate & Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [master]
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '10.0.x'
-  API_PROJECT: 'src/Inventory.Api'
-  INFRA_PROJECT: 'src/Inventory.Infrastructure'
-  SOLUTION: 'HouseholdInventory.slnx'
+  DOTNET_VERSION: "10.0.x"
+  API_PROJECT: "src/Inventory.Api"
+  INFRA_PROJECT: "src/Inventory.Infrastructure"
+  SOLUTION: "HouseholdInventory.slnx"
 
 jobs:
   # ─────────────────────────────────────────────
