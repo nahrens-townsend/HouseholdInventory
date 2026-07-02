@@ -40,7 +40,6 @@ public class WarrantyReminderService : BackgroundService
         {
             try
             {
-                // Log the start of each check cycle
                 _logger.LogInformation(
                     "WarrantyReminderService checking for expiring warranties at {Time}.",
                     DateTime.UtcNow);
@@ -49,42 +48,7 @@ public class WarrantyReminderService : BackgroundService
                 using var scope = _scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
 
-                // Define the time window for "expiring soon" warranties
-                var today = DateTime.UtcNow.Date;
-                var cutoff = today.AddDays(6); // ~5 day warning window + inclusive buffer
-
-                // Fetch items whose warranty expires within the next ~5-6 days
-                var expiringItems = await context.InventoryItems
-                    .Where(i => i.WarrantyExpiry >= today && i.WarrantyExpiry < cutoff)
-                    .ToListAsync(stoppingToken);
-
-                foreach (var item in expiringItems)
-                {
-                    // Check if we already created a reminder for this item within its warning window
-                    bool alreadyReminded = await context.WarrantyReminders
-                        .AnyAsync(wr =>
-                            wr.InventoryItemId == item.Id &&
-                            wr.CreatedAt >= item.WarrantyExpiry.AddDays(-5),
-                            stoppingToken);
-
-                    // If no reminder exists, create one
-                    if (!alreadyReminded)
-                    {
-                        context.WarrantyReminders.Add(new WarrantyReminder
-                        {
-                            InventoryItemId = item.Id,
-
-                            // Simple human-readable message (future use: email/SMS notifications)
-                            Message = $"Warranty for '{item.Name}' expires on {item.WarrantyExpiry:yyyy-MM-dd}.",
-
-                            CreatedAt = DateTime.UtcNow,
-                            IsProcessed = false
-                        });
-                    }
-                }
-
-                // Persist all newly created reminders
-                await context.SaveChangesAsync(stoppingToken);
+                await ProcessWarrantyRemindersAsync(context, DateTime.UtcNow.Date, stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -96,5 +60,52 @@ public class WarrantyReminderService : BackgroundService
             // Wait before running the next check cycle
             await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
         }
+    }
+
+    /// <summary>
+    /// Checks for items with warranties expiring within the next 5 days and creates
+    /// reminder records for any that have not yet been reminded.
+    /// Extracted for testability — callers supply the reference date instead of <c>DateTime.UtcNow</c>.
+    /// </summary>
+    public async Task ProcessWarrantyRemindersAsync(
+        InventoryDbContext context,
+        DateTime today,
+        CancellationToken cancellationToken = default)
+    {
+        // Define the time window for "expiring soon" warranties
+        var cutoff = today.AddDays(6); // ~5 day warning window + inclusive buffer
+
+        // Fetch items whose warranty expires within the next ~5-6 days
+        var expiringItems = await context.InventoryItems
+            .Where(i => i.WarrantyExpiry >= today && i.WarrantyExpiry < cutoff)
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in expiringItems)
+        {
+            // Check if we already created a reminder for this item within its warning window
+            bool alreadyReminded = await context.WarrantyReminders
+                .AnyAsync(wr =>
+                    wr.InventoryItemId == item.Id &&
+                    wr.CreatedAt >= item.WarrantyExpiry.AddDays(-5),
+                    cancellationToken);
+
+            // If no reminder exists, create one
+            if (!alreadyReminded)
+            {
+                context.WarrantyReminders.Add(new WarrantyReminder
+                {
+                    InventoryItemId = item.Id,
+
+                    // Simple human-readable message (future use: email/SMS notifications)
+                    Message = $"Warranty for '{item.Name}' expires on {item.WarrantyExpiry:yyyy-MM-dd}.",
+
+                    CreatedAt = DateTime.UtcNow,
+                    IsProcessed = false
+                });
+            }
+        }
+
+        // Persist all newly created reminders
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

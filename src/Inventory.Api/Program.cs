@@ -49,3 +49,6 @@ app.MapGraphQL();
 app.MapControllers();
 
 app.Run();
+
+// Exposes the Program class to the test assembly so WebApplicationFactory<Program> can reference it.
+public partial class Program { }
